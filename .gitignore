@@ -43,3 +43,30 @@ htmlcov/
 
 # Streamlit
 .streamlit/
+
+# Streamlit-required processed artifacts (tracked)
+!data/
+!data/processed/
+!data/processed/vrp_dataset.parquet
+!data/processed/regression_metrics.csv
+!data/processed/classification_metrics.csv
+!data/processed/regression_predictions.csv
+!data/processed/classification_predictions.csv
+!data/processed/regression_coefficients.csv
+!data/processed/backtest_timeseries.csv
+!data/processed/backtest_summary.csv
+!data/processed/robustness_by_year.csv
+!data/processed/robustness_by_vix_regime.csv
+!data/processed/robustness_by_vrp_decile.csv
+!data/processed/rule_based_strategy_summary.csv
+!data/processed/rule_based_strategy_timeseries.csv
+!data/processed/volatility_regression_metrics.csv
+!data/processed/volatility_regression_predictions.csv
+!data/processed/volatility_classification_metrics.csv
+!data/processed/volatility_classification_predictions.csv
+!data/processed/volatility_calibration.csv
+!data/processed/volatility_feature_importance.csv
+!data/processed/volatility_decile_study.csv
+!data/processed/missing_data_report.csv
+!data/processed/model_sample_report.csv
+!data/processed/debug_pipeline_report.csv

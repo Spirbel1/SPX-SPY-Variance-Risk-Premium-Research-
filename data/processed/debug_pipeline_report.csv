@@ -1,0 +1,8 @@
+step,n_rows,date_min,date_max,n_missing_adj_close,n_missing_vix,n_missing_log_return,n_missing_VRP_21d,n_missing_VRP_63d,n_missing_vrp_zscore_252d,n_missing_next_5d_return,n_missing_next_21d_return,notes
+after_raw_data_load,5858,2014-01-02,2026-06-17,5858.0,5858.0,5858.0,5858.0,5858.0,5858.0,5858.0,5858.0,"spx_rows=2608, vix_rows=3250, spy_rows=3134"
+after_merge,3133,2014-01-02,2026-06-17,0.0,0.0,3133.0,3133.0,3133.0,3133.0,3133.0,3133.0,primary_universe=SPY
+after_price_vol_features,3133,2014-01-02,2026-06-17,0.0,0.0,1.0,3133.0,3133.0,3133.0,3133.0,3133.0,price/vol features computed; VRP columns not yet created
+after_vrp_features,3133,2014-01-02,2026-06-17,0.0,0.0,1.0,21.0,63.0,272.0,3133.0,3133.0,VRP_21d and VRP_63d now available; warmup NaN is normal
+after_targets,3133,2014-01-02,2026-06-17,0.0,0.0,1.0,21.0,63.0,272.0,5.0,21.0,future return/vol targets added with NaN tails at end
+after_model_frame_filtering,226194,2014-04-03 00:00:00,2026-06-10 00:00:00,,,,,,,,,aggregate rows across train/test splits in model_sample_report
+after_walk_forward_predictions,100568,2019-04-04 00:00:00,2026-06-10 00:00:00,,,,,,,,,total prediction rows across regression and classification
