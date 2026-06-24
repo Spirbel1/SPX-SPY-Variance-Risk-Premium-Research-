@@ -117,6 +117,7 @@ def render_options_pricing_dashboard() -> None:
     start_s = FIXED_START_DATE
     end_s = FIXED_END_DATE
     st.info(f"Fixed options period (cache-only mode): {start_s} to {end_s}")
+    st.success(f"Historical dataset bundled with app: SPY options snapshot for {start_s} to {end_s} is included.")
     st.text_input("Symbol", value="SPY", disabled=True, key="opt_symbol")
 
     status = _cache_status(start_s, end_s)
