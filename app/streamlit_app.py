@@ -944,8 +944,9 @@ the model gives the expansion day a higher predicted probability about 68% of th
                                     fig_roc = px.line(roc_df, x="fpr", y="tpr",
                                                     title=f"ROC Curve (AUC = {roc_auc:.3f}) - {target_vexp} / {sel_roc_fg} / {sel_roc_model}")
                                     fig_roc.add_shape(type="line", x0=0, x1=1, y0=0, y1=1,
-                                                    line=dict(dash="dash", color="gray", width=2),
-                                                    annotation_text="random classifier")
+                                                    line=dict(dash="dash", color="gray", width=2))
+                                    fig_roc.add_annotation(x=0.5, y=0.5, text="random classifier", 
+                                                         showarrow=False, font=dict(color="gray", size=10))
                                     fig_roc.update_xaxes(title_text="False Positive Rate")
                                     fig_roc.update_yaxes(title_text="True Positive Rate")
                                     st.plotly_chart(fig_roc, width="stretch")
