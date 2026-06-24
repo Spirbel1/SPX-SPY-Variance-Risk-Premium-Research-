@@ -365,6 +365,67 @@ with tabs[3]:
 # TAB 5 - Volatility Level Prediction
 with tabs[4]:
     st.subheader("Volatility Level Prediction")
+    st.markdown(
+        """
+This tab predicts the **future realized volatility level** (a numeric forecast),
+not a binary expansion label.
+        """
+    )
+
+    with st.expander("What this tab is testing (definitions and equations)"):
+        st.markdown(
+            r"""
+**Forecast targets**
+
+- `next_5d_realized_volatility`
+- `next_21d_realized_volatility`
+
+These are forward-window realized volatility outcomes:
+
+$$
+	ext{RVOL}_{5,t}^{\text{future}} = \text{StdDev}(r_{t+1},\ldots,r_{t+5})\times\sqrt{252}
+$$
+
+$$
+	ext{RVOL}_{21,t}^{\text{future}} = \text{StdDev}(r_{t+1},\ldots,r_{t+21})\times\sqrt{252}
+$$
+
+with daily log returns:
+
+$$
+r_t = \ln\left(\frac{P_t}{P_{t-1}}\right)
+$$
+
+The model compares today's features (including VIX/VRP and price-vol features)
+to future realized-volatility values that actually occurred historically.
+            """
+        )
+
+    with st.expander("How to read level-forecast metrics"):
+        st.markdown(
+            """
+**RMSE / MAE**
+
+- Lower is better.
+- In this dashboard, `rmse_vol_pts` and `mae_vol_pts` convert decimal volatility error
+  into volatility points for easier interpretation.
+
+**Out-of-sample R^2 (vs RV21 baseline)**
+
+- `> 0`: improves on baseline.
+- `= 0`: similar to baseline.
+- `< 0`: worse than baseline.
+
+**Predicted vs Actual plot**
+
+- Tight clustering around the 45-degree line indicates better calibration and fit.
+
+**Time-series error plot**
+
+- Persistent bias above/below zero indicates systematic over/under-prediction.
+            """
+        )
+
     st.info(
         "**VIX is a strong benchmark for future volatility level.** "
         "This result is expected because VIX is built from options-implied volatility. "
@@ -379,12 +440,56 @@ with tabs[4]:
             ["next_21d_realized_volatility", "next_5d_realized_volatility"],
             key="vl_target",
         )
+        if target_vl == "next_21d_realized_volatility":
+            st.info(
+                "21d realized-vol forecasts are typically smoother and less event-noisy than 5d forecasts."
+            )
+        else:
+            st.warning(
+                "5d realized-vol forecasts are more sensitive to short-lived shocks and event timing."
+            )
+
         vm = vol_reg_m[vol_reg_m["target"] == target_vl].copy() if "target" in vol_reg_m.columns else vol_reg_m.copy()
         vm_sorted = vm.sort_values("rmse", ascending=True) if "rmse" in vm.columns else vm
         vm_disp = vm_sorted.copy()
         for col in ["rmse", "mae"]:
             if col in vm_disp.columns:
                 vm_disp[f"{col}_vol_pts"] = (vm_disp[col] * 100).round(3)
+
+        if not vm_sorted.empty:
+            best_row = vm_sorted.iloc[0]
+            best_model = best_row.get("model_name", "?")
+            best_fg = best_row.get("feature_group", "?")
+            best_rmse = float(best_row["rmse"]) if "rmse" in best_row.index and pd.notna(best_row["rmse"]) else float("nan")
+            best_mae = float(best_row["mae"]) if "mae" in best_row.index and pd.notna(best_row["mae"]) else float("nan")
+            rmse_str = f"{best_rmse * 100:.3f} vol pts" if not np.isnan(best_rmse) else "n/a"
+            mae_str = f"{best_mae * 100:.3f} vol pts" if not np.isnan(best_mae) else "n/a"
+            st.markdown(
+                f"**Best model for {target_vl}: {best_fg}/{best_model} | RMSE: {rmse_str} | MAE: {mae_str}.**"
+            )
+
+            if "OOS_R2_vs_rv21_baseline" in best_row.index and pd.notna(best_row["OOS_R2_vs_rv21_baseline"]):
+                best_r2 = float(best_row["OOS_R2_vs_rv21_baseline"])
+                if best_r2 > 0:
+                    st.success(
+                        f"Best model improves over the RV21 baseline (OOS R^2 = {best_r2:.3f})."
+                    )
+                elif best_r2 < 0:
+                    st.warning(
+                        f"Best model is still below the RV21 baseline (OOS R^2 = {best_r2:.3f})."
+                    )
+                else:
+                    st.info("Best model is approximately equal to the RV21 baseline (OOS R^2 ~ 0).")
+
+            if isinstance(best_fg, str):
+                fg = best_fg.lower()
+                if "vix" in fg:
+                    st.info("VIX-based feature group leads, consistent with VIX as a strong level-vol benchmark.")
+                elif "vrp" in fg:
+                    st.info("VRP-based group leads, suggesting relative risk-pricing features help level forecasts here.")
+                elif "combined" in fg:
+                    st.info("Combined group leads; confirm this remains robust out-of-sample and across regimes.")
+
         st.markdown("**All models - sorted by RMSE (lower = better)**")
         st.dataframe(vm_disp, width="stretch")
 
@@ -431,10 +536,163 @@ with tabs[4]:
                     width="stretch",
                 )
 
+                mean_err = float(pp["error_vol_pts"].mean()) if not pp["error_vol_pts"].empty else float("nan")
+                if not np.isnan(mean_err):
+                    if mean_err > 0:
+                        st.caption("Average error is positive: model slightly over-predicts realized volatility.")
+                    elif mean_err < 0:
+                        st.caption("Average error is negative: model slightly under-predicts realized volatility.")
+                    else:
+                        st.caption("Average error is near zero: little aggregate directional bias.")
+
+        st.divider()
+        st.markdown(
+            """
+**Bottom line for this tab**
+
+- Strong performance means the model estimates future volatility *levels* better than baseline.
+- This does **not** directly imply SPY direction predictability.
+- Level forecasts are often most useful for risk budgeting, volatility targeting, and options-structure selection.
+            """
+        )
+
 
 # TAB 6 - Volatility Expansion Prediction
 with tabs[5]:
     st.subheader("Volatility Expansion Prediction")
+    st.markdown(
+        """
+This tab does **not** test whether SPY will go up or down.
+It tests whether **future realized volatility** will be higher than the current
+21-day realized-volatility baseline.
+        """
+    )
+
+    st.info(
+        "This project has two related volatility tasks: "
+        "(1) volatility level prediction (predict future RVOL value) and "
+        "(2) volatility expansion classification (predict whether future RVOL exceeds current 21d RVOL)."
+    )
+
+    with st.expander("Two related tasks: level prediction vs expansion classification"):
+        st.markdown(
+            r"""
+**1) Volatility level prediction (regression task)**
+
+Predicts the future realized-volatility level over a forward window.
+
+$$
+	ext{RVOL}_{5,t}^{\text{future}} = \text{StdDev}(r_{t+1},\ldots,r_{t+5})\times\sqrt{252}
+$$
+
+$$
+	ext{RVOL}_{21,t}^{\text{future}} = \text{StdDev}(r_{t+1},\ldots,r_{t+21})\times\sqrt{252}
+$$
+
+The module then compares predictions vs realized outcomes historically using metrics such as RMSE, MAE, and out-of-sample $R^2$.
+
+**2) Volatility expansion classification (this tab)**
+
+This is a binary target, not a direct volatility-value forecast:
+
+$$
+	ext{Expansion}_{5,t}=\mathbb{1}\left[\text{RVOL}_{5,t}^{\text{future}} > \text{RVOL}_{21,t}^{\text{current}}\right]
+$$
+
+$$
+	ext{Expansion}_{21,t}=\mathbb{1}\left[\text{RVOL}_{21,t}^{\text{future}} > \text{RVOL}_{21,t}^{\text{current}}\right]
+$$
+
+The classifier outputs a probability of expansion, then converts it to class by threshold (typically 0.50).
+            """
+        )
+
+    with st.expander("What this tab is testing (definitions and equations)"):
+        st.markdown(
+            r"""
+**Target definition**
+
+- Baseline: `realized_vol_annualized_21d`
+- Future targets: `next_5d_realized_volatility`, `next_21d_realized_volatility`
+
+Expansion label:
+
+$$
+	ext{next\_nd\_vol\_expansion}_t = \mathbb{1}\left[\text{RVOL}_{n,t}^{\text{future}} > \text{RVOL}_{21,t}^{\text{current}}\right]
+$$
+
+where class `1` means expansion and class `0` means no expansion.
+
+**Realized volatility construction**
+
+Daily log return:
+
+$$
+r_t = \ln\left(\frac{P_t}{P_{t-1}}\right)
+$$
+
+Annualized rolling realized volatility:
+
+$$
+	ext{RVOL}_{n,t} = \text{StdDev}(r_{t-n+1}, \ldots, r_t) \times \sqrt{252}
+$$
+
+**VRP construction (VIX proxy)**
+
+Implied variance from VIX:
+
+$$
+	ext{ImpliedVariance}_t = \left(\frac{\text{VIX}_t}{100}\right)^2
+$$
+
+Variance Risk Premium:
+
+$$
+	ext{VRP}_{n,t} = \left(\frac{\text{VIX}_t}{100}\right)^2 - \text{RealizedVariance}_{n,t}
+$$
+
+For the 21d baseline used in this module:
+
+$$
+	ext{VRP}_{21,t} = \left(\frac{\text{VIX}_t}{100}\right)^2 - \text{RVAR}_{21,t}
+$$
+
+Interpretation:
+- High VRP: options market prices more variance than recently realized.
+- Low/negative VRP: realized variance is already elevated relative to implied variance.
+
+VRP is a **feature/input**, not a target. The model asks whether today's feature set
+(VIX, implied variance, realized variance, VRP and transformations, plus price/vol features)
+helps predict future volatility behavior.
+            """
+        )
+
+    with st.expander("How to read model quality metrics"):
+        st.markdown(
+            """
+**AUC (ROC AUC)**
+
+- AUC measures ranking quality, not raw accuracy.
+- `0.50` is random ranking.
+- Around `0.55` is weak, `0.60` is useful but modest, `0.65+` is stronger and should be validated carefully.
+
+**Balanced accuracy**
+
+- Handles class imbalance by averaging recall for both classes.
+- Near `0.50` is close to random class assignment.
+
+**Calibration curve**
+
+- Tests whether predicted probabilities are numerically trustworthy.
+- Points near diagonal mean good probability calibration.
+
+**Probability histogram and confusion matrix**
+
+- Histogram should show separation between true expansion vs true non-expansion cases.
+- Confusion matrix shows false negatives (missed expansions) vs false positives (false alarms).
+            """
+        )
+
     st.success(
         "**This is the strongest project result.** "
         "VRP helps classify volatility expansion better than VIX-only models. "
@@ -450,6 +708,17 @@ with tabs[5]:
             ["next_21d_vol_expansion", "next_5d_vol_expansion"],
             key="vexp_target",
         )
+        if target_vexp == "next_21d_vol_expansion":
+            st.info(
+                "21d expansion is usually the more stable signal. "
+                "The 5d target is noisier and more sensitive to single shocks and event timing."
+            )
+        else:
+            st.warning(
+                "5d expansion is a high-noise target. "
+                "Treat short-horizon improvements cautiously and confirm with longer out-of-sample history."
+            )
+
         vc = vol_cls_m[vol_cls_m["target"] == target_vexp].copy() if "target" in vol_cls_m.columns else vol_cls_m.copy()
         vc_sorted = vc.sort_values("ROC_AUC", ascending=False) if "ROC_AUC" in vc.columns else vc
 
@@ -465,6 +734,33 @@ with tabs[5]:
                 f"**For {target_vexp}, the best model ({best_fg}/{best_mn}) achieved "
                 f"AUC = {best_auc:.3f} and balanced accuracy = {ba_str}.**"
             )
+
+            if isinstance(best_fg, str):
+                best_fg_l = best_fg.lower()
+                if "vrp" in best_fg_l and "only" in best_fg_l:
+                    st.success(
+                        "Best feature group is VRP-only. This supports the thesis that relative options-implied "
+                        "risk pricing is useful for volatility-regime classification."
+                    )
+                elif "price" in best_fg_l:
+                    st.info(
+                        "Best feature group is price-only. Under this sample, price dynamics may carry more "
+                        "incremental information than VRP for this target."
+                    )
+                elif "combined" in best_fg_l:
+                    st.info(
+                        "Best feature group is combined. Verify this is robust out-of-sample and not feature "
+                        "redundancy or overfitting."
+                    )
+
+            if best_auc < 0.55:
+                st.error("Model signal is weak (AUC close to random). Treat this as non-actionable for risk decisions.")
+            elif best_auc < 0.60:
+                st.warning("Model signal is modest. Useful as a secondary filter, not as a standalone regime switch.")
+            elif best_auc < 0.65:
+                st.success("Model signal is useful but moderate. Focus on calibration and stability across regimes.")
+            else:
+                st.success("Model signal is relatively strong. Prioritize robustness checks and conservative deployment.")
 
         st.dataframe(vc_sorted, width="stretch")
 
@@ -486,6 +782,10 @@ with tabs[5]:
         # Calibration - requires feature_group column
         if not vol_cal.empty:
             st.subheader("Calibration Curve")
+            st.caption(
+                "Interpretation: diagonal alignment means predicted probabilities are trustworthy; "
+                "below diagonal indicates overestimation of expansion probability."
+            )
             if "feature_group" not in vol_cal.columns:
                 st.warning(
                     "Calibration file is missing `feature_group`. "
@@ -510,6 +810,10 @@ with tabs[5]:
 
         # Probability distribution + confusion matrix
         if not vol_cls_p.empty:
+            st.caption(
+                "A useful classifier should assign higher probabilities to actual expansion cases "
+                "than to non-expansion cases."
+            )
             all_fgs = sorted(vol_cls_p["feature_group"].dropna().unique()) if "feature_group" in vol_cls_p.columns else []
             all_models = sorted(vol_cls_p["model_name"].dropna().unique()) if "model_name" in vol_cls_p.columns else []
             sel_fg_p = st.selectbox("Prediction feature group", all_fgs, key="pred_fg")
@@ -532,6 +836,34 @@ with tabs[5]:
                                          columns=["Pred: no expansion", "Pred: expansion"])
                     st.subheader("Confusion Matrix")
                     st.dataframe(cm_df, width="stretch")
+
+                    try:
+                        fn = int(cm[1, 0])
+                        fp = int(cm[0, 1])
+                        if fn > fp:
+                            st.warning(
+                                "False negatives exceed false positives. The model misses expansion events more often "
+                                "than it issues false alarms; this is riskier for exposure management."
+                            )
+                        else:
+                            st.info(
+                                "False positives are at least as frequent as false negatives. This is more conservative "
+                                "for risk controls, but may reduce opportunity capture."
+                            )
+                    except Exception:
+                        pass
+
+        st.divider()
+        st.markdown(
+            """
+**Bottom line for this tab**
+
+- A strong result here means the model can rank future expansion regimes better than random.
+- It does **not** imply direct SPY direction prediction.
+- It does **not** imply immediate tradability as a standalone strategy.
+- The most practical use is risk management: position sizing, options-structure selection, and regime-aware exposure control.
+            """
+        )
 
 
 # TAB 7 - Decile & Regime Analysis
