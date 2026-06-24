@@ -695,6 +695,33 @@ helps predict future volatility behavior.
             """
         )
 
+    with st.expander("Models used for classification"):
+        st.markdown(
+            """
+**Classification algorithms**
+
+This tab uses several classification algorithms, each with different strengths:
+
+- **Logistic Regression**: Linear boundary classifier. Fast, interpretable, baseline model. Good for establishing a reference point.
+- **Random Forest**: Ensemble of decision trees. Captures non-linear patterns and feature interactions. More complex but often more accurate.
+- **Ridge Classifier**: Linear classifier with regularization to prevent overfitting. Balanced between simplicity and flexibility.
+- **Support Vector Machine (SVM)**: Finds maximum-margin boundary between classes. Can handle complex patterns with kernel tricks.
+
+Each model is trained independently on the selected feature group (VRP-only, price-only, combined, etc.) for the chosen target 
+(next_5d_vol_expansion or next_21d_vol_expansion).
+
+**Why multiple models?**
+
+Different models capture different patterns in the data. By comparing their AUC and balanced accuracy scores, you can identify:
+- Which feature group carries the most useful signal
+- Whether that signal is robust across different model architectures
+- Whether simple models (logistic regression) or complex ones (random forest) better explain the pattern
+
+If multiple models achieve similar AUC for the same feature group, the signal is likely robust. 
+If only one model performs well, the pattern may be model-specific or fragile.
+            """
+        )
+
     with st.expander("How to read model quality metrics"):
         st.markdown(
             """
