@@ -366,6 +366,14 @@ with tabs[3]:
 with tabs[4]:
     st.subheader("Volatility Level Prediction")
     st.markdown(
+        "**Model type used in this tab:** supervised **regression** models "
+        "(they predict a numeric volatility value, not a class)."
+    )
+    st.caption(
+        "The exact algorithm is shown in `model_name` (e.g., linear model, random forest, gradient boosting), "
+        "and feature set is shown in `feature_group`."
+    )
+    st.markdown(
         """
 This tab predicts the **future realized volatility level** (a numeric forecast),
 not a binary expansion label.
@@ -506,44 +514,57 @@ to future realized-volatility values that actually occurred historically.
             st.plotly_chart(fig_r2, width="stretch")
 
         if not vol_reg_p.empty:
-            fgroups = sorted(vol_reg_p["feature_group"].dropna().unique()) if "feature_group" in vol_reg_p.columns else []
-            models = sorted(vol_reg_p["model_name"].dropna().unique()) if "model_name" in vol_reg_p.columns else []
-            sel_fg = st.selectbox("Feature group for chart", fgroups, key="vl_fg")
-            sel_model = st.selectbox("Model for chart", models, key="vl_model")
-            pp = vol_reg_p[
-                (vol_reg_p["target"] == target_vl)
-                & (vol_reg_p["feature_group"] == sel_fg)
-                & (vol_reg_p["model_name"] == sel_model)
-            ].copy()
-            if not pp.empty:
-                pp["date"] = pd.to_datetime(pp["date"])
-                pp = pp.sort_values("date")
-                pp["y_true_pct"] = pp["y_true"] * 100
-                pp["y_pred_pct"] = pp["y_pred"] * 100
-                pp["error_vol_pts"] = (pp["y_pred"] - pp["y_true"]) * 100
-                st.plotly_chart(
-                    px.scatter(pp, x="y_true_pct", y="y_pred_pct",
-                               title=f"Predicted vs Actual realized vol (%) - {sel_fg}/{sel_model}"),
-                    width="stretch",
-                )
-                st.plotly_chart(
-                    px.line(pp, x="date", y=["y_true_pct", "y_pred_pct"],
-                            title="Actual vs Predicted over time (vol %)"),
-                    width="stretch",
-                )
-                st.plotly_chart(
-                    px.line(pp, x="date", y="error_vol_pts", title="Prediction error over time (vol pts)"),
-                    width="stretch",
-                )
-
-                mean_err = float(pp["error_vol_pts"].mean()) if not pp["error_vol_pts"].empty else float("nan")
-                if not np.isnan(mean_err):
-                    if mean_err > 0:
-                        st.caption("Average error is positive: model slightly over-predicts realized volatility.")
-                    elif mean_err < 0:
-                        st.caption("Average error is negative: model slightly under-predicts realized volatility.")
+            pred_tgt = vol_reg_p[vol_reg_p["target"] == target_vl].copy() if "target" in vol_reg_p.columns else vol_reg_p.copy()
+            if pred_tgt.empty:
+                st.warning(f"No prediction rows found for target `{target_vl}`.")
+            elif "feature_group" not in pred_tgt.columns or "model_name" not in pred_tgt.columns:
+                st.warning("Prediction file is missing `feature_group` or `model_name` columns.")
+            else:
+                fgroups = sorted(pred_tgt["feature_group"].dropna().unique())
+                if not fgroups:
+                    st.warning(f"No feature groups available for target `{target_vl}`.")
+                else:
+                    sel_fg = st.selectbox("Feature group for chart", fgroups, key="vl_fg")
+                    pred_fg = pred_tgt[pred_tgt["feature_group"] == sel_fg].copy()
+                    models = sorted(pred_fg["model_name"].dropna().unique())
+                    if not models:
+                        st.warning(f"No models available for `{sel_fg}` and target `{target_vl}`.")
                     else:
-                        st.caption("Average error is near zero: little aggregate directional bias.")
+                        sel_model = st.selectbox("Model for chart", models, key="vl_model")
+                        pp = pred_fg[pred_fg["model_name"] == sel_model].copy()
+                        if pp.empty:
+                            st.warning(
+                                f"No rows available for target `{target_vl}`, feature group `{sel_fg}`, and model `{sel_model}`."
+                            )
+                        else:
+                            pp["date"] = pd.to_datetime(pp["date"])
+                            pp = pp.sort_values("date")
+                            pp["y_true_pct"] = pp["y_true"] * 100
+                            pp["y_pred_pct"] = pp["y_pred"] * 100
+                            pp["error_vol_pts"] = (pp["y_pred"] - pp["y_true"]) * 100
+                            st.plotly_chart(
+                                px.scatter(pp, x="y_true_pct", y="y_pred_pct",
+                                           title=f"Predicted vs Actual realized vol (%) - {sel_fg}/{sel_model}"),
+                                width="stretch",
+                            )
+                            st.plotly_chart(
+                                px.line(pp, x="date", y=["y_true_pct", "y_pred_pct"],
+                                        title="Actual vs Predicted over time (vol %)"),
+                                width="stretch",
+                            )
+                            st.plotly_chart(
+                                px.line(pp, x="date", y="error_vol_pts", title="Prediction error over time (vol pts)"),
+                                width="stretch",
+                            )
+
+                            mean_err = float(pp["error_vol_pts"].mean()) if not pp["error_vol_pts"].empty else float("nan")
+                            if not np.isnan(mean_err):
+                                if mean_err > 0:
+                                    st.caption("Average error is positive: model slightly over-predicts realized volatility.")
+                                elif mean_err < 0:
+                                    st.caption("Average error is negative: model slightly under-predicts realized volatility.")
+                                else:
+                                    st.caption("Average error is near zero: little aggregate directional bias.")
 
         st.divider()
         st.markdown(
@@ -560,6 +581,13 @@ to future realized-volatility values that actually occurred historically.
 # TAB 6 - Volatility Expansion Prediction
 with tabs[5]:
     st.subheader("Volatility Expansion Prediction")
+    st.markdown(
+        "**Model type used in this tab:** supervised **classification** models "
+        "(they predict probability of expansion, then class 0/1 by threshold)."
+    )
+    st.caption(
+        "The exact algorithm is shown in `model_name`, and the feature-set variant is shown in `feature_group`."
+    )
     st.markdown(
         """
 This tab does **not** test whether SPY will go up or down.
@@ -693,11 +721,13 @@ helps predict future volatility behavior.
             """
         )
 
-    st.success(
-        "**This is the strongest project result.** "
-        "VRP helps classify volatility expansion better than VIX-only models. "
-        "VRP compares implied volatility against recently realized volatility - this measures "
-        "the *relative* pricing of risk, not just the absolute level."
+    st.info(
+        "This section evaluates whether VRP-style features add value for volatility-expansion classification. "
+        "Use the AUC and balanced-accuracy rankings below to determine which feature group actually performs best "
+        "for the selected target."
+    )
+    st.caption(
+        "Note: the key metric here is classification quality (AUC / balanced accuracy), not linear correlation."
     )
 
     if vol_cls_m.empty:
@@ -814,44 +844,57 @@ helps predict future volatility behavior.
                 "A useful classifier should assign higher probabilities to actual expansion cases "
                 "than to non-expansion cases."
             )
-            all_fgs = sorted(vol_cls_p["feature_group"].dropna().unique()) if "feature_group" in vol_cls_p.columns else []
-            all_models = sorted(vol_cls_p["model_name"].dropna().unique()) if "model_name" in vol_cls_p.columns else []
-            sel_fg_p = st.selectbox("Prediction feature group", all_fgs, key="pred_fg")
-            sel_model_p = st.selectbox("Prediction model", all_models, key="pred_model")
-            pp = vol_cls_p[
-                (vol_cls_p["target"] == target_vexp)
-                & (vol_cls_p["feature_group"] == sel_fg_p)
-                & (vol_cls_p["model_name"] == sel_model_p)
-            ].copy()
-            if not pp.empty:
-                pp["class_label"] = pp["y_true"].astype(str).map({"0.0": "No expansion", "1.0": "Expansion", "0": "No expansion", "1": "Expansion"})
-                st.plotly_chart(
-                    px.histogram(pp, x="y_pred_proba", color="class_label", barmode="overlay",
-                                 title="Predicted probability distribution by actual class", nbins=20),
-                    width="stretch",
-                )
-                if "y_pred_class" in pp.columns:
-                    cm = confusion_matrix(pp["y_true"].astype(int), pp["y_pred_class"].astype(int))
-                    cm_df = pd.DataFrame(cm, index=["Actual: no expansion", "Actual: expansion"],
-                                         columns=["Pred: no expansion", "Pred: expansion"])
-                    st.subheader("Confusion Matrix")
-                    st.dataframe(cm_df, width="stretch")
-
-                    try:
-                        fn = int(cm[1, 0])
-                        fp = int(cm[0, 1])
-                        if fn > fp:
+            pred_tgt = vol_cls_p[vol_cls_p["target"] == target_vexp].copy() if "target" in vol_cls_p.columns else vol_cls_p.copy()
+            if pred_tgt.empty:
+                st.warning(f"No prediction rows found for target `{target_vexp}`.")
+            elif "feature_group" not in pred_tgt.columns or "model_name" not in pred_tgt.columns:
+                st.warning("Prediction file is missing `feature_group` or `model_name` columns.")
+            else:
+                all_fgs = sorted(pred_tgt["feature_group"].dropna().unique())
+                if not all_fgs:
+                    st.warning(f"No feature groups available for target `{target_vexp}`.")
+                else:
+                    sel_fg_p = st.selectbox("Prediction feature group", all_fgs, key="pred_fg")
+                    pred_fg = pred_tgt[pred_tgt["feature_group"] == sel_fg_p].copy()
+                    all_models = sorted(pred_fg["model_name"].dropna().unique())
+                    if not all_models:
+                        st.warning(f"No models available for `{sel_fg_p}` and target `{target_vexp}`.")
+                    else:
+                        sel_model_p = st.selectbox("Prediction model", all_models, key="pred_model")
+                        pp = pred_fg[pred_fg["model_name"] == sel_model_p].copy()
+                        if pp.empty:
                             st.warning(
-                                "False negatives exceed false positives. The model misses expansion events more often "
-                                "than it issues false alarms; this is riskier for exposure management."
+                                f"No rows available for target `{target_vexp}`, feature group `{sel_fg_p}`, and model `{sel_model_p}`."
                             )
                         else:
-                            st.info(
-                                "False positives are at least as frequent as false negatives. This is more conservative "
-                                "for risk controls, but may reduce opportunity capture."
+                            pp["class_label"] = pp["y_true"].astype(str).map({"0.0": "No expansion", "1.0": "Expansion", "0": "No expansion", "1": "Expansion"})
+                            st.plotly_chart(
+                                px.histogram(pp, x="y_pred_proba", color="class_label", barmode="overlay",
+                                             title="Predicted probability distribution by actual class", nbins=20),
+                                width="stretch",
                             )
-                    except Exception:
-                        pass
+                            if "y_pred_class" in pp.columns:
+                                cm = confusion_matrix(pp["y_true"].astype(int), pp["y_pred_class"].astype(int))
+                                cm_df = pd.DataFrame(cm, index=["Actual: no expansion", "Actual: expansion"],
+                                                     columns=["Pred: no expansion", "Pred: expansion"])
+                                st.subheader("Confusion Matrix")
+                                st.dataframe(cm_df, width="stretch")
+
+                                try:
+                                    fn = int(cm[1, 0])
+                                    fp = int(cm[0, 1])
+                                    if fn > fp:
+                                        st.warning(
+                                            "False negatives exceed false positives. The model misses expansion events more often "
+                                            "than it issues false alarms; this is riskier for exposure management."
+                                        )
+                                    else:
+                                        st.info(
+                                            "False positives are at least as frequent as false negatives. This is more conservative "
+                                            "for risk controls, but may reduce opportunity capture."
+                                        )
+                                except Exception:
+                                    pass
 
         st.divider()
         st.markdown(
