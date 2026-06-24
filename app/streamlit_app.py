@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, roc_curve, auc
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -698,16 +698,43 @@ helps predict future volatility behavior.
     with st.expander("How to read model quality metrics"):
         st.markdown(
             """
-**AUC (ROC AUC)**
+**AUC (Area Under the ROC Curve)**
 
-- AUC measures ranking quality, not raw accuracy.
-- `0.50` is random ranking.
-- Around `0.55` is weak, `0.60` is useful but modest, `0.65+` is stronger and should be validated carefully.
+AUC measures how well the model **ranks future volatility-expansion risk**. It is the area under the ROC curve, 
+where the x-axis is the false positive rate and the y-axis is the true positive rate across all possible probability thresholds.
+
+*What it measures:*
+- Ranking quality: Does the model assign higher expansion probabilities to periods where volatility actually expanded?
+- The ROC curve plots true positive rate (y-axis) vs false positive rate (x-axis) across all decision thresholds
+- AUC = the area under that curve
+
+*What it does NOT measure:*
+- Probability calibration (whether predicted probabilities are numerically accurate)
+- Profit or tradability
+- Exact volatility magnitude
+- Direction of stock price movement
+
+*Interpretation:*
+- **AUC = 0.50**: Random ranking (model cannot distinguish expansion days from non-expansion days)
+- **AUC = 0.55–0.60**: Weak but marginally useful signal
+- **AUC = 0.60–0.65**: Modest useful signal; should verify stability
+- **AUC = 0.65+**: Decent to strong signal for financial data; prioritize robustness checks
+- **AUC = 1.00**: Perfect ranking (all expansion cases receive higher probabilities than all non-expansion cases)
+
+*Intuitive interpretation:*
+If AUC = 0.68, it means: "If you randomly pick one actual expansion day and one actual non-expansion day, 
+the model gives the expansion day a higher predicted probability about 68% of the time."
 
 **Balanced accuracy**
 
 - Handles class imbalance by averaging recall for both classes.
 - Near `0.50` is close to random class assignment.
+
+**ROC Curve**
+
+- Visual representation of model ranking quality across all thresholds.
+- Diagonal line (FPR = TPR) represents random guessing.
+- Curves above diagonal indicate useful ranking signal.
 
 **Calibration curve**
 
@@ -837,6 +864,53 @@ helps predict future volatility behavior.
                                       line=dict(dash="dash", color="gray"))
                     st.plotly_chart(fig_cal, width="stretch")
                     st.dataframe(cal_view, width="stretch")
+
+        # ROC Curve
+        st.subheader("ROC Curve")
+        st.caption(
+            "The ROC curve shows the trade-off between true positive rate (y-axis: expansions correctly identified) "
+            "and false positive rate (x-axis: non-expansions incorrectly flagged). A curve above the diagonal indicates "
+            "useful ranking signal. The area under this curve is AUC."
+        )
+        if not vol_cls_p.empty:
+            pred_roc = vol_cls_p[vol_cls_p["target"] == target_vexp].copy() if "target" in vol_cls_p.columns else vol_cls_p.copy()
+            if pred_roc.empty:
+                st.warning(f"No prediction data available for ROC curve: {target_vexp}")
+            elif "feature_group" not in pred_roc.columns or "model_name" not in pred_roc.columns:
+                st.warning("Prediction file is missing `feature_group` or `model_name` columns for ROC.")
+            else:
+                roc_fgs = sorted(pred_roc["feature_group"].dropna().unique())
+                if not roc_fgs:
+                    st.warning(f"No feature groups available for ROC curve: {target_vexp}")
+                else:
+                    sel_roc_fg = st.selectbox("Feature group for ROC", roc_fgs, key="roc_fg")
+                    pred_roc_fg = pred_roc[pred_roc["feature_group"] == sel_roc_fg].copy()
+                    roc_models = sorted(pred_roc_fg["model_name"].dropna().unique())
+                    if not roc_models:
+                        st.warning(f"No models available for ROC: {sel_roc_fg} / {target_vexp}")
+                    else:
+                        sel_roc_model = st.selectbox("Model for ROC", roc_models, key="roc_model")
+                        pred_roc_model = pred_roc_fg[pred_roc_fg["model_name"] == sel_roc_model].copy()
+                        if pred_roc_model.empty:
+                            st.warning(f"No prediction data for ROC: {target_vexp} / {sel_roc_fg} / {sel_roc_model}")
+                        elif "y_pred_proba" not in pred_roc_model.columns or "y_true" not in pred_roc_model.columns:
+                            st.warning("Prediction file is missing `y_pred_proba` or `y_true` columns.")
+                        else:
+                            y_true = pred_roc_model["y_true"].astype(int)
+                            y_pred_proba = pred_roc_model["y_pred_proba"].astype(float)
+                            
+                            fpr, tpr, thresholds = roc_curve(y_true, y_pred_proba)
+                            roc_auc = auc(fpr, tpr)
+                            
+                            roc_df = pd.DataFrame({"fpr": fpr, "tpr": tpr})
+                            fig_roc = px.line(roc_df, x="fpr", y="tpr",
+                                            title=f"ROC Curve (AUC = {roc_auc:.3f}) - {target_vexp} / {sel_roc_fg} / {sel_roc_model}")
+                            fig_roc.add_shape(type="line", x0=0, x1=1, y0=0, y1=1,
+                                            line=dict(dash="dash", color="gray", width=2),
+                                            annotation_text="random classifier")
+                            fig_roc.update_xaxes(title_text="False Positive Rate")
+                            fig_roc.update_yaxes(title_text="True Positive Rate")
+                            st.plotly_chart(fig_roc, width="stretch")
 
         # Probability distribution + confusion matrix
         if not vol_cls_p.empty:
