@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from sklearn.metrics import confusion_matrix, roc_curve, auc
+from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -896,21 +896,34 @@ the model gives the expansion day a higher predicted probability about 68% of th
                         elif "y_pred_proba" not in pred_roc_model.columns or "y_true" not in pred_roc_model.columns:
                             st.warning("Prediction file is missing `y_pred_proba` or `y_true` columns.")
                         else:
-                            y_true = pred_roc_model["y_true"].astype(int)
-                            y_pred_proba = pred_roc_model["y_pred_proba"].astype(float)
-                            
-                            fpr, tpr, thresholds = roc_curve(y_true, y_pred_proba)
-                            roc_auc = auc(fpr, tpr)
-                            
-                            roc_df = pd.DataFrame({"fpr": fpr, "tpr": tpr})
-                            fig_roc = px.line(roc_df, x="fpr", y="tpr",
-                                            title=f"ROC Curve (AUC = {roc_auc:.3f}) - {target_vexp} / {sel_roc_fg} / {sel_roc_model}")
-                            fig_roc.add_shape(type="line", x0=0, x1=1, y0=0, y1=1,
-                                            line=dict(dash="dash", color="gray", width=2),
-                                            annotation_text="random classifier")
-                            fig_roc.update_xaxes(title_text="False Positive Rate")
-                            fig_roc.update_yaxes(title_text="True Positive Rate")
-                            st.plotly_chart(fig_roc, width="stretch")
+                            try:
+                                y_true = pd.to_numeric(pred_roc_model["y_true"], errors="coerce").astype(int)
+                                y_pred_proba = pd.to_numeric(pred_roc_model["y_pred_proba"], errors="coerce").astype(float)
+                                
+                                # Drop NaN rows
+                                valid_idx = ~(y_true.isna() | y_pred_proba.isna())
+                                y_true_clean = y_true[valid_idx]
+                                y_pred_proba_clean = y_pred_proba[valid_idx]
+                                
+                                if len(y_true_clean) < 2:
+                                    st.warning(f"Insufficient valid data for ROC (need at least 2 rows, got {len(y_true_clean)}).")
+                                elif len(y_true_clean.unique()) < 2:
+                                    st.warning("Cannot compute ROC: only one class present in data.")
+                                else:
+                                    fpr, tpr, thresholds = roc_curve(y_true_clean, y_pred_proba_clean)
+                                    roc_auc = roc_auc_score(y_true_clean, y_pred_proba_clean)
+                                    
+                                    roc_df = pd.DataFrame({"fpr": fpr, "tpr": tpr})
+                                    fig_roc = px.line(roc_df, x="fpr", y="tpr",
+                                                    title=f"ROC Curve (AUC = {roc_auc:.3f}) - {target_vexp} / {sel_roc_fg} / {sel_roc_model}")
+                                    fig_roc.add_shape(type="line", x0=0, x1=1, y0=0, y1=1,
+                                                    line=dict(dash="dash", color="gray", width=2),
+                                                    annotation_text="random classifier")
+                                    fig_roc.update_xaxes(title_text="False Positive Rate")
+                                    fig_roc.update_yaxes(title_text="True Positive Rate")
+                                    st.plotly_chart(fig_roc, width="stretch")
+                            except Exception as e:
+                                st.error(f"Error computing ROC curve: {str(e)}")
 
         # Probability distribution + confusion matrix
         if not vol_cls_p.empty:
