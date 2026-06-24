@@ -18,13 +18,13 @@ from src.ui.options_pricing_dashboard import render_options_pricing_dashboard
 from src.utils.research_conclusions import generate_research_conclusions
 
 st.set_page_config(page_title="SPX/SPY VRP Research", layout="wide")
-st.title("SPX/SPY Variance Risk Premium â€” Research Dashboard")
+st.title("SPX/SPY Variance Risk Premium - Research Dashboard")
 st.caption(
     "Goal: understand whether options-implied data (VIX, VRP) predicts SPY returns and volatility. "
     "This is a research project, not a trading system."
 )
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --------------------------- helpers ----------------------------------------
 
 PROCESSED = SETTINGS.data_processed_dir
 
@@ -94,7 +94,7 @@ def _verdict_badge(text: str) -> None:
 
 
 def _quality_flag(ok: bool, label: str) -> None:
-    icon = "âś…" if ok else "đź”´"
+    icon = "[OK]" if ok else "[WARN]"
     bg = "#e8f5e9" if ok else "#ffebee"
     st.markdown(
         f'<div style="background:{bg};padding:4px 10px;border-radius:4px;margin:2px 0;">{icon} {label}</div>',
@@ -140,16 +140,16 @@ conclusions = generate_research_conclusions(
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ tab layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 tabs = st.tabs([
-    "1 Â· Executive Summary",
-    "2 Â· Data Quality",
-    "3 Â· Return Prediction",
-    "4 Â· Trading Backtest",
-    "5 Â· Vol Level Prediction",
-    "6 Â· Vol Expansion Prediction",
-    "7 Â· Decile & Regime Analysis",
-    "8 Â· Feature Importance",
-    "9 Â· Critical Conclusions",
-    "10 Â· Options Pricing & Greeks",
+    "1 - Executive Summary",
+    "2 - Data Quality",
+    "3 - Return Prediction",
+    "4 - Trading Backtest",
+    "5 - Vol Level Prediction",
+    "6 - Vol Expansion Prediction",
+    "7 - Decile & Regime Analysis",
+    "8 - Feature Importance",
+    "9 - Critical Conclusions",
+    "10 - Options Pricing & Greeks",
 ])
 
 
@@ -181,7 +181,7 @@ with tabs[0]:
     mc = st.columns(3)
     with mc[0]:
         r2 = conclusions.get("best_return_oos_r2", float("nan"))
-        st.metric("Best return model OOS RÂ˛", f"{r2:.4f}" if isinstance(r2, float) and not np.isnan(r2) else "n/a")
+        st.metric("Best return model OOS R^2", f"{r2:.4f}" if isinstance(r2, float) and not np.isnan(r2) else "n/a")
         st.caption(f"Model: {conclusions.get('best_return_model', 'n/a')}")
     with mc[1]:
         st.metric("Best vol-level RMSE (21d)", _fmt_vol_pts(conclusions.get("best_vol_level_rmse")))
@@ -215,7 +215,7 @@ with tabs[1]:
             all_present = False
         _quality_flag(present, f"`{fname}`")
 
-    overall = "âś… Pass" if all_present else "âš ď¸Ź Warning â€” some files are missing"
+    overall = "PASS" if all_present else "WARNING - some files are missing"
     st.info(f"**Data quality status:** {overall}")
 
     if not debug_rpt.empty:

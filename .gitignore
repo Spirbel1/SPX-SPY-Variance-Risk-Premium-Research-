@@ -71,3 +71,5 @@ htmlcov/
 !data/processed/missing_data_report.csv
 !data/processed/model_sample_report.csv
 !data/processed/debug_pipeline_report.csv
+!data/processed/options_pricing/
+!data/processed/options_pricing/spy_options_pricing_snapshot_20260523_20260623.parquet
