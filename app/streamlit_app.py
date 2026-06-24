@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -14,16 +14,17 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
 
 from src.config import SETTINGS
+from src.ui.options_pricing_dashboard import render_options_pricing_dashboard
 from src.utils.research_conclusions import generate_research_conclusions
 
 st.set_page_config(page_title="SPX/SPY VRP Research", layout="wide")
-st.title("SPX/SPY Variance Risk Premium — Research Dashboard")
+st.title("SPX/SPY Variance Risk Premium â€” Research Dashboard")
 st.caption(
     "Goal: understand whether options-implied data (VIX, VRP) predicts SPY returns and volatility. "
     "This is a research project, not a trading system."
 )
 
-# ─────────────────────────── helpers ────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 PROCESSED = SETTINGS.data_processed_dir
 
@@ -93,7 +94,7 @@ def _verdict_badge(text: str) -> None:
 
 
 def _quality_flag(ok: bool, label: str) -> None:
-    icon = "✅" if ok else "🔴"
+    icon = "âś…" if ok else "đź”´"
     bg = "#e8f5e9" if ok else "#ffebee"
     st.markdown(
         f'<div style="background:{bg};padding:4px 10px;border-radius:4px;margin:2px 0;">{icon} {label}</div>',
@@ -106,7 +107,7 @@ def _missing_file_warning(name: str) -> None:
     st.warning(f"Missing `{name}`. Run:\n```\n{cmd}\n```")
 
 
-# ─────────────────────────── load all data ──────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ load all data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 df = load_dataset()
 reg_metrics = load_csv("regression_metrics.csv")
@@ -136,24 +137,25 @@ conclusions = generate_research_conclusions(
     reg_metrics, cls_metrics, bt_summary, vol_reg_m, vol_cls_m, vol_decile
 )
 
-# ─────────────────────────── tab layout ─────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ tab layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 tabs = st.tabs([
-    "1 · Executive Summary",
-    "2 · Data Quality",
-    "3 · Return Prediction",
-    "4 · Trading Backtest",
-    "5 · Vol Level Prediction",
-    "6 · Vol Expansion Prediction",
-    "7 · Decile & Regime Analysis",
-    "8 · Feature Importance",
-    "9 · Critical Conclusions",
+    "1 Â· Executive Summary",
+    "2 Â· Data Quality",
+    "3 Â· Return Prediction",
+    "4 Â· Trading Backtest",
+    "5 Â· Vol Level Prediction",
+    "6 Â· Vol Expansion Prediction",
+    "7 Â· Decile & Regime Analysis",
+    "8 Â· Feature Importance",
+    "9 Â· Critical Conclusions",
+    "10 Â· Options Pricing & Greeks",
 ])
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 1 — Executive Summary
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 1 â€” Executive Summary
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[0]:
     st.subheader("Research Verdicts")
     st.markdown(
@@ -179,7 +181,7 @@ with tabs[0]:
     mc = st.columns(3)
     with mc[0]:
         r2 = conclusions.get("best_return_oos_r2", float("nan"))
-        st.metric("Best return model OOS R²", f"{r2:.4f}" if isinstance(r2, float) and not np.isnan(r2) else "n/a")
+        st.metric("Best return model OOS RÂ˛", f"{r2:.4f}" if isinstance(r2, float) and not np.isnan(r2) else "n/a")
         st.caption(f"Model: {conclusions.get('best_return_model', 'n/a')}")
     with mc[1]:
         st.metric("Best vol-level RMSE (21d)", _fmt_vol_pts(conclusions.get("best_vol_level_rmse")))
@@ -200,9 +202,9 @@ with tabs[0]:
     st.markdown(f"**Recommended next step:** {conclusions.get('recommended_next_step', '')}")
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 2 — Data Quality
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 2 â€” Data Quality
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[1]:
     st.subheader("Data Quality Validation")
 
@@ -213,7 +215,7 @@ with tabs[1]:
             all_present = False
         _quality_flag(present, f"`{fname}`")
 
-    overall = "✅ Pass" if all_present else "⚠️ Warning — some files are missing"
+    overall = "âś… Pass" if all_present else "âš ď¸Ź Warning â€” some files are missing"
     st.info(f"**Data quality status:** {overall}")
 
     if not debug_rpt.empty:
@@ -227,8 +229,8 @@ with tabs[1]:
                 _quality_flag(vrp21_miss / n_rows < 0.30, f"VRP_21d after vrp-features step: {int(vrp21_miss)} missing / {int(n_rows)} rows")
             price_step = debug_rpt[debug_rpt["step"] == "after_price_vol_features"]
             if not price_step.empty:
-                st.caption("Note: VRP columns are expected to be missing at `after_price_vol_features` — they are created in the next step.")
-        st.dataframe(debug_rpt, use_container_width=True)
+                st.caption("Note: VRP columns are expected to be missing at `after_price_vol_features` â€” they are created in the next step.")
+        st.dataframe(debug_rpt, width="stretch")
     else:
         _missing_file_warning("debug_pipeline_report.csv")
 
@@ -240,7 +242,7 @@ with tabs[1]:
             if not row.empty and "missing_pct" in row.columns:
                 mp = float(row["missing_pct"].iloc[0])
                 _quality_flag(mp < 50.0, f"`{col}` missing: {mp:.1f}%")
-        st.dataframe(miss2, use_container_width=True)
+        st.dataframe(miss2, width="stretch")
     else:
         _missing_file_warning("missing_data_report.csv")
 
@@ -251,18 +253,18 @@ with tabs[1]:
 
     if not sample_rpt.empty:
         st.subheader("Model Sample Report")
-        st.dataframe(sample_rpt, use_container_width=True)
+        st.dataframe(sample_rpt, width="stretch")
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 3 — Return Prediction
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 3 â€” Return Prediction
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[2]:
     st.subheader("Return Prediction")
     st.error(
         "**Return-prediction evidence is weak.** "
         "Any apparent hit rate must be compared against the market's natural upward drift. "
-        "Balanced accuracy and out-of-sample R² are more important than raw accuracy."
+        "Balanced accuracy and out-of-sample RÂ˛ are more important than raw accuracy."
     )
 
     if reg_metrics.empty:
@@ -272,14 +274,14 @@ with tabs[2]:
         m = reg_metrics[reg_metrics["target"] == target_ret].copy() if "target" in reg_metrics.columns else reg_metrics.copy()
         sort_col = "oos_r2" if "oos_r2" in m.columns else ("r2" if "r2" in m.columns else None)
         m_sorted = m.sort_values(sort_col, ascending=False) if sort_col else m
-        st.markdown("**Best regression models (sorted by OOS R²)**")
-        st.dataframe(m_sorted, use_container_width=True)
+        st.markdown("**Best regression models (sorted by OOS RÂ˛)**")
+        st.dataframe(m_sorted, width="stretch")
 
         if sort_col and "model_family" in m.columns:
             fig = px.bar(m_sorted.head(20), x="model_family", y=sort_col,
-                         title=f"OOS R² by model — {target_ret}", color="model_family")
+                         title=f"OOS RÂ˛ by model â€” {target_ret}", color="model_family")
             fig.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="zero baseline")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     if cls_metrics.empty:
         _missing_file_warning("classification_metrics.csv")
@@ -294,24 +296,24 @@ with tabs[2]:
         if "is_degenerate_classifier" in mc_df.columns:
             n_deg = int((mc_df["is_degenerate_classifier"] > 0).sum())
             if n_deg > 0:
-                st.warning(f"⚠️ {n_deg} degenerate classifier(s) detected — predicting only one class.")
+                st.warning(f"âš ď¸Ź {n_deg} degenerate classifier(s) detected â€” predicting only one class.")
         ba_col = "balanced_accuracy" if "balanced_accuracy" in mc_df.columns else None
         if ba_col:
             low_ba = int((mc_df[ba_col] < 0.52).sum())
             if low_ba > 0:
-                st.warning(f"⚠️ {low_ba} model(s) have balanced accuracy below 52% — essentially random.")
+                st.warning(f"âš ď¸Ź {low_ba} model(s) have balanced accuracy below 52% â€” essentially random.")
 
-        st.dataframe(mc_sorted, use_container_width=True)
+        st.dataframe(mc_sorted, width="stretch")
         if auc_col and "model_family" in mc_df.columns:
             fig3 = px.bar(mc_sorted.head(20), x="model_family", y=auc_col,
-                          title=f"AUC by model — {target_cls}", color="model_family")
+                          title=f"AUC by model â€” {target_cls}", color="model_family")
             fig3.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="random baseline")
-            st.plotly_chart(fig3, use_container_width=True)
+            st.plotly_chart(fig3, width="stretch")
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 4 — Trading Backtest
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 4 â€” Trading Backtest
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[3]:
     st.subheader("Trading Backtest")
     st.warning(
@@ -328,7 +330,7 @@ with tabs[3]:
         if eq_cols:
             st.plotly_chart(
                 px.line(bt, x="date", y=eq_cols, title="Strategy vs Buy-and-Hold (active prediction period only)"),
-                use_container_width=True,
+                width="stretch",
             )
 
         for ec in ["equity_overlay_ret", "equity_buy_hold_ret"]:
@@ -337,7 +339,7 @@ with tabs[3]:
                 bt[f"dd_{ec}"] = eq / eq.cummax() - 1
         dd_cols = [c for c in bt.columns if c.startswith("dd_")]
         if dd_cols:
-            st.plotly_chart(px.line(bt, x="date", y=dd_cols, title="Drawdown comparison"), use_container_width=True)
+            st.plotly_chart(px.line(bt, x="date", y=dd_cols, title="Drawdown comparison"), width="stretch")
 
     if not bt_summary.empty:
         st.subheader("Performance Summary (active period)")
@@ -345,7 +347,7 @@ with tabs[3]:
         for c in ["annual_return", "annual_volatility"]:
             if c in disp.columns:
                 disp[f"{c}_fmt"] = disp[c].apply(_fmt_pct)
-        st.dataframe(disp, use_container_width=True)
+        st.dataframe(disp, width="stretch")
 
         strat_sharpe = conclusions.get("strategy_sharpe", float("nan"))
         bh_sharpe = conclusions.get("bh_sharpe", float("nan"))
@@ -360,17 +362,17 @@ with tabs[3]:
 
     if not rule_summary.empty:
         st.subheader("Rule-Based Strategy Comparison")
-        st.dataframe(rule_summary, use_container_width=True)
+        st.dataframe(rule_summary, width="stretch")
 
     for label, data in [("Robustness by Year", rob_year), ("Robustness by VIX Regime", rob_vix), ("Robustness by VRP Decile", rob_decile)]:
         if not data.empty:
             st.subheader(label)
-            st.dataframe(data, use_container_width=True)
+            st.dataframe(data, width="stretch")
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 5 — Volatility Level Prediction
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 5 â€” Volatility Level Prediction
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[4]:
     st.subheader("Volatility Level Prediction")
     st.info(
@@ -393,20 +395,20 @@ with tabs[4]:
         for col in ["rmse", "mae"]:
             if col in vm_disp.columns:
                 vm_disp[f"{col}_vol_pts"] = (vm_disp[col] * 100).round(3)
-        st.markdown("**All models — sorted by RMSE (lower = better)**")
-        st.dataframe(vm_disp, use_container_width=True)
+        st.markdown("**All models â€” sorted by RMSE (lower = better)**")
+        st.dataframe(vm_disp, width="stretch")
 
         if "rmse" in vm.columns and "feature_group" in vm.columns:
             fig = px.bar(vm_sorted, x="model_name", y="rmse", color="feature_group",
-                         barmode="group", title=f"RMSE by model (decimal vol) — {target_vl}",
+                         barmode="group", title=f"RMSE by model (decimal vol) â€” {target_vl}",
                          labels={"rmse": "RMSE (decimal)"})
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         if "OOS_R2_vs_rv21_baseline" in vm.columns and "feature_group" in vm.columns:
             fig_r2 = px.bar(vm_sorted, x="model_name", y="OOS_R2_vs_rv21_baseline", color="feature_group",
-                            barmode="group", title=f"OOS R² vs RV21 baseline — {target_vl}")
+                            barmode="group", title=f"OOS RÂ˛ vs RV21 baseline â€” {target_vl}")
             fig_r2.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="RV21 level")
-            st.plotly_chart(fig_r2, use_container_width=True)
+            st.plotly_chart(fig_r2, width="stretch")
 
         if not vol_reg_p.empty:
             fgroups = sorted(vol_reg_p["feature_group"].dropna().unique()) if "feature_group" in vol_reg_p.columns else []
@@ -426,29 +428,29 @@ with tabs[4]:
                 pp["error_vol_pts"] = (pp["y_pred"] - pp["y_true"]) * 100
                 st.plotly_chart(
                     px.scatter(pp, x="y_true_pct", y="y_pred_pct",
-                               title=f"Predicted vs Actual realized vol (%) — {sel_fg}/{sel_model}"),
-                    use_container_width=True,
+                               title=f"Predicted vs Actual realized vol (%) â€” {sel_fg}/{sel_model}"),
+                    width="stretch",
                 )
                 st.plotly_chart(
                     px.line(pp, x="date", y=["y_true_pct", "y_pred_pct"],
                             title="Actual vs Predicted over time (vol %)"),
-                    use_container_width=True,
+                    width="stretch",
                 )
                 st.plotly_chart(
                     px.line(pp, x="date", y="error_vol_pts", title="Prediction error over time (vol pts)"),
-                    use_container_width=True,
+                    width="stretch",
                 )
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 6 — Volatility Expansion Prediction
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 6 â€” Volatility Expansion Prediction
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[5]:
     st.subheader("Volatility Expansion Prediction")
     st.success(
         "**This is the strongest project result.** "
         "VRP helps classify volatility expansion better than VIX-only models. "
-        "VRP compares implied volatility against recently realized volatility — this measures "
+        "VRP compares implied volatility against recently realized volatility â€” this measures "
         "the *relative* pricing of risk, not just the absolute level."
     )
 
@@ -476,24 +478,24 @@ with tabs[5]:
                 f"AUC = {best_auc:.3f} and balanced accuracy = {ba_str}.**"
             )
 
-        st.dataframe(vc_sorted, use_container_width=True)
+        st.dataframe(vc_sorted, width="stretch")
 
         # AUC by feature group
         if "ROC_AUC" in vc.columns and "feature_group" in vc.columns:
             auc_summary = vc.groupby("feature_group", as_index=False)["ROC_AUC"].max().sort_values("ROC_AUC", ascending=False)
             fig_auc = px.bar(auc_summary, x="feature_group", y="ROC_AUC",
-                             title=f"Best AUC by feature group — {target_vexp}", color="feature_group")
+                             title=f"Best AUC by feature group â€” {target_vexp}", color="feature_group")
             fig_auc.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="random baseline")
-            st.plotly_chart(fig_auc, use_container_width=True)
+            st.plotly_chart(fig_auc, width="stretch")
 
         if "balanced_accuracy" in vc.columns and "feature_group" in vc.columns:
             ba_summary = vc.groupby("feature_group", as_index=False)["balanced_accuracy"].max()
             fig_ba = px.bar(ba_summary, x="feature_group", y="balanced_accuracy",
-                            title=f"Best balanced accuracy — {target_vexp}", color="feature_group")
+                            title=f"Best balanced accuracy â€” {target_vexp}", color="feature_group")
             fig_ba.add_hline(y=0.5, line_dash="dash", line_color="red")
-            st.plotly_chart(fig_ba, use_container_width=True)
+            st.plotly_chart(fig_ba, width="stretch")
 
-        # Calibration — requires feature_group column
+        # Calibration â€” requires feature_group column
         if not vol_cal.empty:
             st.subheader("Calibration Curve")
             if "feature_group" not in vol_cal.columns:
@@ -512,11 +514,11 @@ with tabs[5]:
                 ]
                 if not cal_view.empty:
                     fig_cal = px.line(cal_view, x="avg_predicted_probability", y="actual_positive_rate",
-                                      markers=True, title=f"Calibration — {target_vexp} / {sel_cal_fg} / {sel_cal_model}")
+                                      markers=True, title=f"Calibration â€” {target_vexp} / {sel_cal_fg} / {sel_cal_model}")
                     fig_cal.add_shape(type="line", x0=0, x1=1, y0=0, y1=1,
                                       line=dict(dash="dash", color="gray"))
-                    st.plotly_chart(fig_cal, use_container_width=True)
-                    st.dataframe(cal_view, use_container_width=True)
+                    st.plotly_chart(fig_cal, width="stretch")
+                    st.dataframe(cal_view, width="stretch")
 
         # Probability distribution + confusion matrix
         if not vol_cls_p.empty:
@@ -534,19 +536,19 @@ with tabs[5]:
                 st.plotly_chart(
                     px.histogram(pp, x="y_pred_proba", color="class_label", barmode="overlay",
                                  title="Predicted probability distribution by actual class", nbins=20),
-                    use_container_width=True,
+                    width="stretch",
                 )
                 if "y_pred_class" in pp.columns:
                     cm = confusion_matrix(pp["y_true"].astype(int), pp["y_pred_class"].astype(int))
                     cm_df = pd.DataFrame(cm, index=["Actual: no expansion", "Actual: expansion"],
                                          columns=["Pred: no expansion", "Pred: expansion"])
                     st.subheader("Confusion Matrix")
-                    st.dataframe(cm_df, use_container_width=True)
+                    st.dataframe(cm_df, width="stretch")
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 7 — Decile & Regime Analysis
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 7 â€” Decile & Regime Analysis
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[6]:
     st.subheader("Decile & Regime Analysis")
 
@@ -557,14 +559,14 @@ with tabs[6]:
             (
                 "vix_decile",
                 "VIX Decile Study",
-                "⚠️ **Benchmark / sanity check only.** High VIX → high future volatility is expected "
+                "âš ď¸Ź **Benchmark / sanity check only.** High VIX â†’ high future volatility is expected "
                 "because VIX is already an options-implied volatility measure. This is NOT a novel edge.",
                 "warning",
             ),
             (
                 "vrp_decile",
                 "VRP Decile Study",
-                "✅ **More informative.** VRP deciles measure implied volatility relative to recent "
+                "âś… **More informative.** VRP deciles measure implied volatility relative to recent "
                 "realized volatility. High VRP signals that options are pricing in more vol than recently "
                 "observed. This is more meaningful for regime analysis.",
                 "success",
@@ -572,7 +574,7 @@ with tabs[6]:
             (
                 "rv21_decile",
                 "RV21 Decile Study",
-                "ℹ️ Current realized vol predicts future vol level, but high current vol does not "
+                "â„ąď¸Ź Current realized vol predicts future vol level, but high current vol does not "
                 "necessarily predict further expansion.",
                 "info",
             ),
@@ -589,12 +591,12 @@ with tabs[6]:
             if col_21 in d.columns:
                 fig_v = px.line(d, x="decile", y=col_21, markers=True,
                                 title=f"{label}: avg next-21d realized vol by decile (decimal)")
-                st.plotly_chart(fig_v, use_container_width=True)
+                st.plotly_chart(fig_v, width="stretch")
             if col_exp in d.columns:
                 fig_e = px.line(d, x="decile", y=col_exp, markers=True,
                                 title=f"{label}: 21d vol expansion rate by decile")
-                st.plotly_chart(fig_e, use_container_width=True)
-            st.dataframe(d, use_container_width=True)
+                st.plotly_chart(fig_e, width="stretch")
+            st.dataframe(d, width="stretch")
 
         # High vs mid VRP
         vrp_d = vol_decile[vol_decile["decile_type"] == "vrp_decile"].copy()
@@ -602,9 +604,9 @@ with tabs[6]:
             top9 = vrp_d[vrp_d["decile"] == 9]
             mid = vrp_d[vrp_d["decile"].between(3, 6)]
             if not top9.empty and not mid.empty:
-                st.subheader("VRP Decile 9 vs Middle Deciles (3–6)")
+                st.subheader("VRP Decile 9 vs Middle Deciles (3â€“6)")
                 comp = pd.DataFrame({
-                    "group": ["High VRP (decile 9)", "Mid VRP (decile 3–6)"],
+                    "group": ["High VRP (decile 9)", "Mid VRP (decile 3â€“6)"],
                     "avg_next_21d_vol_%": [
                         round(float(top9["avg_next_21d_vol"].mean()) * 100, 2),
                         round(float(mid["avg_next_21d_vol"].mean()) * 100, 2),
@@ -614,12 +616,12 @@ with tabs[6]:
                         round(float(mid["vol_expansion_rate_21d"].mean()), 4),
                     ],
                 })
-                st.dataframe(comp, use_container_width=True)
+                st.dataframe(comp, width="stretch")
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 8 — Feature Importance
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 8 â€” Feature Importance
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[7]:
     st.subheader("Feature Importance")
     st.warning(
@@ -643,10 +645,10 @@ with tabs[7]:
             top10 = fi_view.sort_values("mean_importance", ascending=False).head(10)
             err_x = "std_importance" if "std_importance" in top10.columns else None
             fig_fi = px.bar(top10, x="mean_importance", y="feature", orientation="h",
-                            title=f"Top 10 features — {sel_fi_target} / {sel_fi_model}",
+                            title=f"Top 10 features â€” {sel_fi_target} / {sel_fi_model}",
                             error_x=err_x, color="feature")
-            st.plotly_chart(fig_fi, use_container_width=True)
-            st.dataframe(fi_view.sort_values("mean_importance", ascending=False), use_container_width=True)
+            st.plotly_chart(fig_fi, width="stretch")
+            st.dataframe(fi_view.sort_values("mean_importance", ascending=False), width="stretch")
 
     if not reg_coef.empty and "model_family" in reg_coef.columns:
         st.subheader("Return Model Coefficients")
@@ -660,13 +662,13 @@ with tabs[7]:
             st.plotly_chart(
                 px.bar(agg_coef, x="coef_value", y="coef_name", orientation="h",
                        title="Average coefficient magnitude (return model)"),
-                use_container_width=True,
+                width="stretch",
             )
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# TAB 9 — Critical Conclusions
-# ═══════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 9 â€” Critical Conclusions
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 with tabs[8]:
     st.subheader("Critical Conclusions")
     st.markdown(
@@ -684,13 +686,13 @@ because it compares implied volatility with recently realized volatility.
         ("2. Trading strategy", "#d32f2f", "The current trading strategy is not good enough to trade."),
         ("3. VIX as benchmark (not novel)", "#6a1b9a",
          "VIX is a useful but obvious benchmark for future volatility level. "
-         "High VIX → high future vol is not a novel edge because VIX is itself an implied-vol measure."),
+         "High VIX â†’ high future vol is not a novel edge because VIX is itself an implied-vol measure."),
         ("4. VRP incremental value", "#388e3c",
-         "VRP has stronger incremental value for predicting volatility expansion — "
+         "VRP has stronger incremental value for predicting volatility expansion â€” "
          "this is the most meaningful finding."),
         ("5. Best result", "#388e3c",
          "The best result is 21-day volatility expansion prediction using VRP-only models."),
-        ("6. VIX decile — benchmark only", "#f57c00",
+        ("6. VIX decile â€” benchmark only", "#f57c00",
          "High VIX predicting high future vol is expected. Do not overstate this finding."),
         ("7. VRP vs VIX", "#388e3c",
          "High VRP means implied vol is elevated relative to recent realized vol. "
@@ -735,3 +737,11 @@ st.caption(
     "across regimes are distinct questions. AUC measures ranking quality, not accuracy. "
     "VIX decile analysis is a benchmark / sanity check, not alpha."
 )
+
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# TAB 10 â€” Options Pricing & Greeks
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+with tabs[9]:
+    render_options_pricing_dashboard()
+

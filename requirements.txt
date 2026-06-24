@@ -9,4 +9,5 @@ pandas-datareader
 yfinance
 python-dotenv
 pyarrow
+databento
 pytest

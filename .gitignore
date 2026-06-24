@@ -20,6 +20,7 @@ env/
 
 # Data — raw and processed outputs are not versioned
 data/raw/
+data/cache_manifest/
 data/processed/
 
 # Parquet / CSV outputs

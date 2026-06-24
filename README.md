@@ -121,6 +121,63 @@ streamlit run app/streamlit_app.py
 
 Dashboard includes tabs for data overview, VRP features, regressions, classification, backtest results, and robustness checks.
 
+## Options Pricing & Greeks Add-on
+
+The dashboard includes a tab called **Options Pricing & Greeks** for daily SPY options pricing analytics.
+
+### What It Does
+
+- Uses Databento daily options data (no intraday, no tick, no 0DTE).
+- Downloads raw daily data only when you click **Download / Update Databento Cache**.
+- Saves raw and processed data locally as Parquet.
+- Loads local cache on later runs without re-downloading.
+- Computes implied volatility, Black-Scholes-Merton theoretical price, and Greeks.
+- Compares market price vs theoretical price under different volatility modes.
+
+### API Key Setup
+
+Set Databento API key with either method:
+
+1. Environment variable:
+
+```bash
+set DATABENTO_API_KEY=your_key_here
+```
+
+2. Streamlit secrets:
+
+```toml
+# .streamlit/secrets.toml
+DATABENTO_API_KEY = "your_key_here"
+```
+
+The app never hard-codes or prints your key.
+
+### Cache-First Workflow
+
+1. Open the **Options Pricing & Greeks** tab.
+2. Choose a date range (default 30 days, warning above 30, blocked above 90 unless explicitly confirmed).
+3. Click **Download / Update Databento Cache** once.
+4. On future runs, click **Load from cache** to use local files only.
+
+Local cache paths:
+
+- `data/raw/databento/options/`
+- `data/processed/options_pricing/`
+- `data/cache_manifest/cache_manifest.json`
+
+This module is designed so widget changes and chart interactions do not trigger Databento API calls.
+
+### Cost Controls (Current Defaults)
+
+To reduce Databento usage cost, the downloader now limits contracts before requesting daily OHLCV:
+
+- DTE window: `7` to `45`
+- Moneyness band: `0.90` to `1.10`
+- Max contract symbols: `1500`
+
+This keeps the first implementation focused on near-ATM, near-term contracts while preserving daily-only behavior.
+
 ## MVP Limitation
 
 VIX is an index-level implied volatility proxy, not a full model-free implied variance from a full SPX option chain. It is useful for MVP research but can diverge from option-chain-based variance estimates.
